@@ -1,4 +1,4 @@
-ursina
-Pillow
-pygame
-pyinstaller
+ursina>=5.0.0
+pillow>=9.0
+pygame>=2.0
+pyinstaller>=5.0
