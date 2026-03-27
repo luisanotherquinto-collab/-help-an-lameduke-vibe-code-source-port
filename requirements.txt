@@ -1,0 +1,4 @@
+ursina
+Pillow
+pygame
+pyinstaller
