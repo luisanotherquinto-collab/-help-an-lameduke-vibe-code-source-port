@@ -1,0 +1,1629 @@
+
+// Duke Nukem IIID Script Code
+
+include defs.con
+include music.con
+
+/*
+---------------------------
+Game Startup and Pre-Level inits...
+---------------------------
+*/
+
+
+define slow_to_stop 1
+define face_player 2
+define face_exit 4
+define geth 8
+define getv 16
+define houver 32
+define stick_to_ceiling 64
+define face_to_player 128
+define rhr 256
+define on_owner 512
+define stick_to_floor 1024
+
+define pstanding 1
+define pwalking 2
+define prunning 4
+define pducking 8
+define pfalling 16
+define pjumping 32
+define phigher 64
+define pwalkingback 128
+define prunningback 256
+define plookingleft 512
+define plookingright 1024
+define pfacingframes 2048
+define pshooting 4096
+define ponground 8192
+define pjetpack 16384
+
+define WEAPON1           OTHERSHOTSPARK
+define WEAPON2           SHOTSPARK1
+define WEAPON3           BULLET
+define WEAPON4           HEAVYHBOMB
+define WEAPON5           RPG
+
+/*
+---------------------------
+Definitions for various strengths
+---------------------------
+*/
+
+
+define WEAKEST           1
+define WEAK              5
+define MEDIUMSTRENGTH    10
+define TOUGH             20
+define REALLYTOUGH       30
+
+define GIVEUPDIST 4096
+
+/*
+---------------------------
+Intro Management Code
+    Its only appropriate devote the 3D engine towards an intro framework,
+    Premise of the following code is devoted to...
+        (1) Camera "floating" and sprite offset locations.
+        (2) Auto cansee and cool track movement /w zooming
+        (3) Force MUSIC
+---------------------------
+*/
+
+/*
+--------------------------
+Definitions for players movement coms.
+--------------------------
+*/
+
+/*
+---------------------------
+Definitions for various intelligence (needs more work)
+---------------------------
+*/
+
+
+move FEMSTOPVEL
+move FEMRUNVEL        128   0
+
+action FEM_STANDING     0   1   8
+action FEM_RUNNING     32   4   8  -1   10
+action FEM_AIMING      40   1   8   1   20
+action FEM_SHOOTING    48   2   8   1   15
+action FEM_FLINTCHING  64   1   1   1   10
+action FEM_DEAD        64   5   1   1   20
+action FEM_LYING       68   1   1
+action FEM_DEAD1       64   5   1   1   20
+action FEM_LYING1      70   1   1
+
+actor FEMANOID WEAK FEM_STANDING FEMSTOPVEL
+
+    ifonwater sink
+    else fall
+
+    ifsquished
+    {
+        sound squish1.voc
+        spawn OOZ
+        blood 10
+        killit
+    }
+
+    ifaction FEM_DEAD
+    {
+        ifactioncount 4
+        {
+            action FEM_LYING
+            cstat 0
+        }
+        else break
+    }
+    ifaction FEM_LYING break
+
+    ifaction FEM_FLINTCHING
+    {
+        ifactioncount 3
+            action FEM_STANDING
+    }
+    else ifhitweapon
+    {
+        ifdead
+            action FEM_DEAD
+        else
+            action FEM_FLINTCHING
+
+        move FEMSTOPVEL slow_to_stop face_to_player
+    }
+
+    ifaction FEM_SHOOTING
+    {
+        ifactioncount 2
+        {
+            shoot WEAPON2
+            spawn SHELL
+            resetactioncount
+        }
+        else ifrnd 32
+        {
+            action FEM_STANDING
+            move FEMSTOPVEL slow_to_stop face_to_player
+        }
+        break
+    }
+
+    ifaction FEM_STANDING
+    {
+        ifpdistl 4096 ifcansee
+        {
+            action FEM_RUNNING
+            move FEMRUNVEL face_to_player rhr geth
+        }
+    }
+    else ifaction FEM_RUNNING
+    {
+        ifpdistl 2048 ifrnd 64
+        {
+            action FEM_AIMING
+            move FEMSTOPVEL slow_to_stop face_to_player
+        }
+    }
+    else ifaction FEM_AIMING ifcansee
+        action FEM_SHOOTING
+enda
+
+move MANSTOPVEL
+move MANRUNVEL        128   0
+
+action MAN_STANDING     0   1   8
+action MAN_RUNNING     32   4   8  -1   10
+action MAN_AIMING      40   1   8   1   20
+action MAN_SHOOTING    48   2   8   1   15
+action MAN_FLINTCHING  64   1   1   1   10
+action MAN_DEAD        65   5   1   1   20
+action MAN_LYING       70   1   1
+action MAN_DEAD1       65   5   1   1   20
+action MAN_LYING1      74   1   1
+
+actor MANDROID WEAK MAN_STANDING MANSTOPVEL
+
+    ifonwater sink
+    else fall
+
+    ifsquished
+    {
+        sound squish1.voc
+        spawn OOZ
+        blood 10
+        killit
+    }
+
+    ifaction MAN_DEAD
+    {
+        ifactioncount 4
+        {
+            action MAN_LYING
+            cstat 0
+        }
+        else break
+    }
+    ifaction MAN_LYING break
+
+    ifaction MAN_FLINTCHING
+    {
+        ifactioncount 3
+            action MAN_STANDING
+    }
+    else ifhitweapon
+    {
+        ifdead
+            action MAN_DEAD
+        else
+            action MAN_FLINTCHING
+
+        move MANSTOPVEL slow_to_stop face_to_player
+    }
+
+    ifaction MAN_SHOOTING
+    {
+        ifactioncount 2
+        {
+            shoot WEAPON5
+            spawn SHELL
+            resetactioncount
+        }
+        else ifrnd 32
+        {
+            action MAN_STANDING
+            move MANSTOPVEL slow_to_stop face_to_player
+        }
+        break
+    }
+
+    ifaction MAN_STANDING
+    {
+        ifpdistl 4096 ifcansee
+        {
+            action MAN_RUNNING
+            move MANRUNVEL face_to_player rhr geth
+        }
+    }
+    else ifaction MAN_RUNNING
+    {
+        ifpdistl 2048 ifrnd 64
+        {
+            action MAN_AIMING
+            move MANSTOPVEL slow_to_stop face_to_player
+        }
+    }
+    else ifaction MAN_AIMING ifcansee
+        action MAN_SHOOTING
+enda
+
+/*
+--------------------------------------------------------------------------------
+Troop code.
+--------------------------------------------------------------------------------
+*/
+
+
+move   TROOP1GETP        84
+move   TROOP1FLEE       108
+move   TROOP1HIT        -32   -8
+move   TROOP1DEADHIT    -64   -8
+move   TROOP1HOUVERUP    64  -64
+move   TROOP1HOUVERFLEE  96  -64
+move   TROOP1STAYPUT
+
+action STANDING_FRAME            30    1    5
+action RUNNING_FRAMES            0     6    5    1   15
+action SHOOTING_MIDDLE_FRAMES    30    2    5    1   10
+action SHOOTING_UP_FRAMES        40    2    5    1   10
+action TDYING_FRAMES             55    4    1    1   30
+action TDEAD                     58
+action FLINTCHING_FRAME          50    1    5    1   4
+action JP_FRAMES                 59    1    5
+action JP_DOWN_FRAMES            64    1    5
+
+state check_hits
+    ifaction TDYING_FRAMES
+    {
+        ifactioncount 4
+        {
+            action TDEAD
+            move TROOP1STAYPUT
+        }
+    }
+    else ifhitweapon
+    {
+        ifdead
+        {
+            addscore 1000
+            blood 5
+            cstat 0
+
+            ifwasweapon WEAPON5
+            {
+                guts
+                debris 5
+                sound squish1.voc
+                killit
+            }
+            else action TDYING_FRAMES
+        }
+        else
+        {
+            ifaction JP_FRAMES action JP_DOWN_FRAMES
+            else action FLINTCHING_FRAME
+        }
+        move TROOP1HIT face_player slow_to_stop
+    }
+ends
+
+
+state check_shooting
+    ifaction SHOOTING_UP_FRAMES
+    {
+        ifactioncount 2
+        {
+            shoot WEAPON2
+            spawn SHELL
+            resetactioncount
+        }
+        ifmovecount 16
+        {
+            action RUNNING_FRAMES
+            move TROOP1FLEE face_exit geth rhr
+        }
+    }
+    else ifaction SHOOTING_MIDDLE_FRAMES ifactioncount 2
+    {
+        ifrnd 48
+        {
+            action RUNNING_FRAMES
+            move TROOP1GETP face_player geth rhr
+        }
+        else
+        {
+            shoot WEAPON2
+            spawn SHELL
+            resetactioncount
+        }
+    }
+ends
+
+state troopshoot
+
+    ifp phigher
+    {
+        ifrnd 128
+        {
+            action JP_FRAMES
+            break
+        }
+        else action SHOOTING_UP_FRAMES
+    }
+    else action SHOOTING_MIDDLE_FRAMES
+
+    move TROOP1STAYPUT face_to_player slow_to_stop
+ends
+
+actor TROOP1 MEDIUMSTRENGTH STANDING_FRAME TROOP1STAYPUT
+    fall
+    ifsquished
+    {
+        sound squish1.voc
+        spawn OOZ
+        blood 10
+        killit
+    }
+
+    ifaction TDEAD break
+
+    ifaction JP_FRAMES
+    {
+        ifactioncount 4
+        {
+            spawn EXPLOSION2
+            ifp phigher
+            {
+                ifmove TROOP1HOUVERFLEE
+                {
+                    ifmovecount 10
+                        move TROOP1HOUVERUP getv face_player slow_to_stop
+                }
+                else
+                {
+                    ifrnd 8 move TROOP1HOUVERFLEE getv geth face_exit rhr
+                    else move TROOP1HOUVERUP getv geth face_to_player
+                }
+            }
+            else
+            {
+                ifrnd 2 // ifp ponground
+                {
+                    action STANDING_FRAME
+                    move TROOP1STAYPUT slow_to_stop face_to_player
+                }
+                else
+                {
+                    fall fall fall
+                }
+            }
+        }
+        else
+        {
+            move TROOP1HOUVERUP getv face_to_player
+            spawn EXPLOSION2
+        }
+
+        ifactioncount 2048
+        {
+            action STANDING_FRAME
+            move TROOP1STAYPUT face_to_player slow_to_stop
+        }
+        else state check_hits
+        break
+    }
+
+    ifaction JP_DOWN_FRAMES
+    {
+        ifactioncount 5
+        {
+            action STANDING_FRAME
+            move TROOP1STAYPUT face_player slow_to_stop
+        }
+        break
+    }
+
+    ifonwater sink
+
+    ifaction FLINTCHING_FRAME
+    {
+        ifactioncount 5
+        {
+            action STANDING_FRAME
+            move TROOP1STAYPUT face_to_player slow_to_stop
+            ifrnd 16 action JP_FRAMES
+        }
+        break
+    }
+    else state check_hits
+
+    state check_shooting
+
+    ifaction RUNNING_FRAMES
+    {
+        ifmove TROOP1FLEE
+        {
+            ifactioncount 24
+                state troopshoot
+        }
+        else ifplayersweapon WEAPON5
+        {
+            action RUNNING_FRAMES
+            move TROOP1FLEE face_exit geth rhr
+        }
+
+        ifpdistl 1024 ifrnd 192
+            state troopshoot
+    }
+    
+    ifaction STANDING_FRAME ifcansee
+    {
+        ifpdistl 1024
+        {
+            action SHOOTING_MIDDLE_FRAMES
+            move TROOP1STAYPUT face_to_player slow_to_stop
+        }
+        else ifactioncount 8
+        {
+            action RUNNING_FRAMES
+            move TROOP1FLEE face_exit geth rhr
+        }
+    }
+enda
+
+/*
+--------------------------------------------------------------------------------
+Captain code.
+--------------------------------------------------------------------------------
+*/
+
+
+move   CAPTAINLIMPVELS       48
+move   CAPTAINRUNVELS       128
+move   CAPTAINDAMAGEDVELS   -32   -8
+move   CAPTAINDEADVEL1     -128
+move   CAPTAINDEADVEL2     -64
+move   CAPTAINHAULTVELS
+
+action CAPT_STAND_FRAME            35    1    5    1
+action CAPT_RUN_FRAMES              0    2    5    1   30
+action CAPT_RUN2_FRAMES            10    2    5    1   30
+action CAPT_LIMP_FRAMES             0    4    5    1   15
+action CAPT_SHOOT_FRAMES           20    2    5    1   40
+action CAPT_SHOCK_FRAME            30    1    5    1   10
+action CAPT_FLINTCH_FRAME          40    1    5    1   4
+action CAPT_DYING_FRAMES           45    5    1    1   30
+action CAPT_LYING_FRAME            49    1    1
+
+state capt_shoot
+    ifpdistg 2048
+    {
+        action CAPT_SHOOT_FRAMES
+        move CAPTAINHAULTVELS slow_to_stop face_to_player
+    }
+    else ifpdistl 1024
+    {
+        action CAPT_SHOCK_FRAME
+        move CAPTAINHAULTVELS slow_to_stop face_to_player
+    }
+ends
+
+state is_it_shooting
+    ifcansee
+    {
+        ifaction CAPT_SHOCK_FRAME
+        {
+            ifactioncount 2
+            {
+                spawn BLUESPARK
+                resetactioncount
+            }
+            ifpdistg 2048
+            {
+                action CAPT_STAND_FRAME
+                move CAPTAINHAULTVELS face_to_player slow_to_stop
+            }
+        }
+        else ifaction CAPT_SHOOT_FRAMES
+        {
+            ifrnd 8
+            {
+                action CAPT_STAND_FRAME
+                move CAPTAINHAULTVELS face_to_player slow_to_stop
+            }
+
+            else
+            {
+                ifactioncount 2
+                {
+                    shoot WEAPON3
+                    resetactioncount
+                }
+                else ifpdistl 1024
+                {
+                    action CAPT_SHOCK_FRAME
+                    move CAPTAINHAULTVELS slow_to_stop face_player
+                }
+            }
+        }
+    }
+    else
+    {
+        action CAPT_STAND_FRAME
+        move CAPTAINHAULTVELS face_to_player slow_to_stop
+    }
+ends
+
+state capt_walkin
+    ifaction CAPT_STAND_FRAME ifactioncount 2 // Think a bit
+        ifcansee
+        {
+            ifrnd 48 state capt_shoot
+            else
+            {
+                ifstrength MEDIUMSTRENGTH
+                    action CAPT_LIMP_FRAMES
+                else action CAPT_RUN_FRAMES
+            }
+            else state capt_shoot
+            break
+        }
+
+    ifaction CAPT_LIMP_FRAMES
+    {
+        ifactioncount 4 resetactioncount
+        else
+        {
+            ifactioncount 2 move CAPTAINLIMPVELS face_to_player geth rhr
+            else move CAPTAINHAULTVELS
+        }
+    }
+    else ifaction CAPT_RUN_FRAMES // Towards Player only for now
+    {
+        ifactioncount 2
+        {
+            action CAPT_RUN2_FRAMES
+            move CAPTAINHAULTVELS slow_to_stop face_to_player
+        }
+        else ifactioncount 1
+            move CAPTAINRUNVELS face_to_player geth rhr
+    }
+    else ifaction CAPT_RUN2_FRAMES
+    {
+        ifactioncount 2
+        {
+            action CAPT_RUN_FRAMES
+            move CAPTAINHAULTVELS slow_to_stop face_to_player
+        }
+        else ifactioncount 1
+            move CAPTAINRUNVELS face_to_player geth rhr
+    }
+ends
+
+actor CAPTAIN REALLYTOUGH CAPT_STAND_FRAME CAPTAINHAULTVELS
+
+    ifonwater sink
+    else fall
+
+    ifsquished
+    {
+        sound squish1.voc
+        spawn OOZ
+        blood 10
+        killit
+    }
+
+    ifaction CAPT_LYING_FRAME
+    {
+        ifpdistl 2048 ifrnd 8 spawn SMALLSMOKE
+        break
+    }
+
+    ifaction CAPT_DYING_FRAMES
+    {
+        ifactioncount 4
+        {
+            action CAPT_LYING_FRAME
+            move CAPTAINHAULTVELS
+            spawn SMALLSMOKE
+            debris 1
+        }
+        else ifactioncount 2
+            move CAPTAINDEADVEL2
+        break
+    }
+
+    state is_it_shooting
+
+    ifaction CAPT_FLINTCH_FRAME
+    {
+        ifactioncount 10
+            action CAPT_STAND_FRAME
+    }
+
+    else ifhitweapon
+    {
+        ifdead
+        {
+            ifwasweapon RPG
+            {
+                debris 10
+                killit
+            }
+            else
+            {
+                cstat 0
+                action CAPT_DYING_FRAMES
+                ifwasweapon BULLET
+                    move CAPTAINDEADVEL1 geth face_player
+                else
+                    move CAPTAINHAULTVELS
+            }
+        }
+        else
+        {
+            action CAPT_FLINTCH_FRAME
+            blood 10
+            move CAPTAINHAULTVELS slow_to_stop face_player
+        }
+        break
+    }
+
+    ifaction CAPT_SHOOT_FRAMES break
+    ifaction CAPT_SHOCK_FRAME break
+
+    ifpdistg 768 state capt_walkin
+    ifactioncount 3 ifrnd 84
+        state capt_shoot
+enda
+
+/*
+--------------------------------------------------------------------------------
+The Jellyfish code.
+--------------------------------------------------------------------------------
+*/
+
+
+action JFWAITING          0   3   5   1  15
+action JFMOVING           0   3   5   1  8
+action JFATACK           15   3   5   1  13
+action JFHIT             30   1   1   1  10
+action JFDYING           30   8   1   1  20
+action JFLAYDEAD         37   1   1
+move JELLYWAITVELS        0 128
+move JELLYMOVEVELS       64   0
+move JELLYHITVELS      -128   0
+
+actor JELLYFISH TOUGH JFWAITING JELLYWAITVELS
+
+    fall
+    ifaction JFLAYDEAD break
+
+    ifsquished
+    {
+        sound squish1.voc
+        spawn OOZ
+        blood 10
+        killit
+    }
+
+    ifaction JFDYING
+    {
+        ifactioncount 7
+        {
+            action JFLAYDEAD
+            move JELLYWAITVELS slow_to_stop
+        }
+        break
+    }
+    ifaction JFHIT
+    {
+        ifactioncount 2
+        {
+            action JFWAITING
+            move JELLYWAITVELS slow_to_stop face_to_player
+        }
+        break
+    }
+    else ifhitweapon
+    {
+        move JELLYHITVELS slow_to_stop face_player geth
+
+        ifdead
+        {
+            cstat 0
+            action JFDYING
+            blood 30
+        }
+        else
+            action JFHIT
+        break
+    }
+
+    ifaction JFWAITING
+    {
+        ifcansee
+        {
+            action JFMOVING
+            move JELLYMOVEVELS face_to_player geth
+        }
+    }
+    else ifaction JFMOVING
+    {
+        ifpdistl 1024
+        {
+            action JFATACK
+            move JELLYWAITVELS slow_to_stop face_player
+        }
+    }
+    else ifaction JFATACK
+    {
+        ifpdistg 1596
+        {
+            action JFWAITING
+            move JELLYWAITVELS slow_to_stop face_player
+        }
+    }
+enda
+
+action FIRSTGUNFRAME      0   1   1   1
+actor FIRSTGUNSPRITE 0 FIRSTGUNFRAME
+    fall
+    ifpdistl 512
+    {
+        sound getweapn.voc
+        addscore 100
+        addweapon WEAPON2
+        killit
+    }
+enda
+
+
+action RADIUS_FRAMES 0 1 1 1
+actor RADIUSEXPLOSION WEAK RADIUS_FRAMES
+    ifactioncount 2
+        killit
+enda
+
+move RANDBVEL5 24
+move RANDBVEL4 48
+move RANDBVEL6 72
+move RANDBVEL1 96
+move RANDBVEL2 144
+move RANDBVEL3 128
+
+move BSQUIRTVEL 192
+
+action BLOODFRAMES 0 1 1 1
+actor BLOOD 0 BLOODFRAMES
+    fall
+    ifmove 0
+    {
+        ifsquished
+            move BSQUIRTVEL geth
+        else
+        {
+            ifrnd 8 move RANDBVEL1 geth
+            else ifrnd 16 move RANDBVEL2 geth
+                else ifrnd 24 move RANDBVEL3 geth
+                    else ifrnd 32 move RANDBVEL4 geth
+                        else ifrnd 48 move RANDBVEL5 geth
+                            else move RANDBVEL6 geth
+        }
+    }
+    ifactioncount 12 killit
+enda
+
+move E_SPOTVEL
+actor E_SPOT 0 0 E_SPOTVEL stick_to_floor rhr
+    ifmovecount 5 killit
+enda
+
+actor CLUB WEAKEST
+enda
+
+move EYEVEL
+actor OPERATOREYE 0 0 EYEVEL stick_to_ceiling
+enda
+
+
+action SHOT1FRAME    0    1
+action SHOT2FRAME    1    1
+action SHOT3FRAME    2    1
+action SHOT4FRAME    3    1
+action SHOT5FRAME    4    1
+actor WEAPON1 WEAK
+    ifactioncount 1
+    {
+        ifinwater spawn WATERBUBBLE
+        spawn SMALLSMOKE
+        killit
+    }
+    ifaction 0
+    {
+        ifpdistl 768
+        {
+            addhealth -5
+//            sound bodyblop.voc
+        }
+        ifrnd 16 action SHOT1FRAME
+        else
+        {
+            ifrnd 32 action SHOT2FRAME
+            else
+            {
+                ifrnd 64 action SHOT3FRAME
+                else
+                {
+                    ifrnd 128 action SHOT4FRAME
+                    else action SHOT5FRAME
+                }
+            }
+        }
+    }
+    else
+    {
+        ifinwater spawn WATERBUBBLE
+        spawn SMALLSMOKE
+        killit
+    }
+enda
+
+action WEAP2FRAMES 0  4  1  1  2
+actor WEAPON2 WEAK WEAP2FRAMES
+    ifactioncount 4
+        killit
+    else ifactioncount 1
+    {
+        ifinwater spawn WATERBUBBLE
+        spawn SMALLSMOKE
+        ifpdistl 768
+        {
+//            sound bodyblop.voc
+            addhealth -5
+            killit
+        }
+    }
+
+enda
+
+move BULLET_VELS 192
+action WEAP3FRAMES 0   2   1   1
+actor WEAPON3 TOUGH WEAP3FRAMES BULLET_VELS geth
+    ifinwater killit
+    ifrnd 32 cstat 2
+    ifonwater
+    {
+        spawn WATERSPLASH
+        killit
+    }
+    ifdead
+    {
+        spawn EXPLOSION
+        killit
+    }
+enda
+
+actor WEAPON4 REALLYTOUGH
+enda
+
+move RPG_GO 192
+action RPG_FR1  0 1 7 1
+action RPG_FR2 80 1 7 1
+actor WEAPON5 TOUGH RPG_FR1 RPG_GO geth
+
+    // Since the two RPG rotations are seperated, duel
+    // action definitions are required.  If the RPG's frames were
+    // together, then a simple:
+    //          action RPG_FRAMES 0 2 7 1
+    // ...would do the trick.
+
+    ifaction RPG_FR1 action RPG_FR2
+    else action RPG_FR1
+
+    spawn EXPLOSION2
+
+    ifdead
+    {
+        ifonwater spawn WATERSPLASH
+        nuke
+        hitradius 2048 REALLYTOUGH
+        killit
+    }
+    else
+        ifrnd 192
+            ifinwater
+                spawn WATERBUBBLE
+enda
+
+action BLUESPARKFRAMES   0   2   1   1
+move BLUESPARKOFFSET 32  -8
+actor BLUESPARK WEAKEST BLUESPARKFRAMES BLUESPARKOFFSET geth getv
+    ifactioncount 4
+    {
+        ifpdistl 1592
+            sound biglite.voc
+        ifpdistl 768
+            addhealth -1
+        killit
+    }
+enda
+
+action SEENINEFRAME      0   1   1
+actor SEENINE WEAK SEENINEFRAME
+enda
+
+state HITSOMETHING
+     sound expl1.voc
+     addscore 100
+     spawn EXPLOSION killit
+ends
+
+action SIXPAKFRAME      0   1   1   1
+actor SIXPAK WEAKEST SIXPAKFRAME
+    fall
+
+    ifpdistl 768
+    {
+        addhealth 60
+        sound getweapn.voc
+        killit
+    }
+    ifhitweapon
+        state HITSOMETHING
+enda
+
+action GUN2AFRAME      0   1   1   1
+actor GUN2ASPRITE 0 GUN2AFRAME
+
+    fall
+    ifpdistl 512
+    {
+        sound getweapn.voc
+        addscore 100
+        addweapon WEAPON3
+        killit
+    }
+enda
+
+action COKEFRAME      0   2   1   1
+actor COKE WEAKEST COKEFRAME
+    fall
+    ifpdistl 512
+    {
+        addscore 100
+        addhealth 10
+        sound getweapn.voc
+        killit
+    }
+    ifhitweapon
+    {
+        ifwasweapon WEAPON1
+        {
+            cactor SPINCOKE
+            addscore 50
+        }
+        else
+        {
+            spawn EXPLOSION
+            addscore 100
+            killit
+        }
+     }
+enda
+
+action PSTAND          0   1   5
+action PDROWNING    1127   1   1   1    1
+action PJETPACK     1137   2   5   1   10
+action PWALK        1147   6   5   1   16
+action PRUN         1147   6   5   1   10
+action PWALKBACK    1172   6   5  -1   16
+action PRUNBACK     1172   6   5  -1   10
+action PJUMPING     1177   4   5   1   30
+action PFALLING     1192   1   5
+action PLOOKINLEFT  1197   1   5
+action PLOOKINRIGHT 1202   1   5
+action PDUCKING     1207   1   5
+action PCRAWLING    1207   3   5   1   20
+action PSTANDSHOOT  1222   1   5   1    2
+action PSWIMMINGGO  1497   1   5   1   10
+action PSWIMMING    1497   4   5   1   13
+action PSWIMMINGWAIT  1512   1   5   1   13
+action PTREDWATER   1517   2   5   1   17
+
+state check_pstandard
+    ifp pwalking action PWALK
+    else ifp pwalkingback action PWALKBACK
+    else ifp prunning action PRUN
+    else ifp prunningback action PRUNBACK
+    else ifp pjumping action PJUMPING
+    else ifp pducking action PDUCKING
+ends
+
+actor APLAYER 100 PSTAND
+
+//    Un-rem the following code for 'GOD MODES'
+
+    
+
+    ifaction PDROWNING
+    {
+        ifactioncount 32
+        {
+            resetplayer
+            action PSTAND
+        }
+        else break
+    }
+    else ifdead
+    {
+        ifinwater
+        {
+            action PDROWNING
+            spawn WATERBUBBLE
+            spawn WATERBUBBLE
+            spawn WATERBUBBLE
+            spawn WATERBUBBLE
+        }
+        else
+        {
+            resetplayer
+            action PSTAND
+        }
+        break
+    }
+
+    ifinwater
+    {
+        ifaction PTREDWATER
+        {
+            ifp pwalking prunning action PSWIMMINGGO
+        }
+        else ifp pstanding pwalkingback prunningback action PTREDWATER
+        else
+        {
+            ifaction PSWIMMING
+            {
+                spawn WATERBUBBLE
+                ifactioncount 4
+                    action PSWIMMINGWAIT
+            }
+            else ifaction PSWIMMINGWAIT
+            {
+                ifactioncount 2
+                    action PSWIMMINGGO
+            }
+            else ifaction PSWIMMINGGO
+            {
+                ifactioncount 2
+                    action PSWIMMING
+            }
+            else action PTREDWATER
+        }
+
+        ifrnd 32 spawn WATERBUBBLE // For effect
+
+        break
+    }
+    else ifp pjetpack
+    {
+        ifaction PJETPACK
+            spawn EXPLOSION2
+        else action PJETPACK
+        break
+    }
+    else ifonwater
+    {
+        ifp ponground
+        {
+            ifaction PTREDWATER break
+            else action PTREDWATER
+            break
+        }
+    }
+    else
+    {
+        ifaction PTREDWATER action PSTAND
+        else ifaction PSWIMMING action PSTAND
+        else ifaction PSWIMMINGWAIT action PSTAND
+        else ifaction PSWIMMINGGO action PSTAND
+        else ifaction PJETPACK action PSTAND
+    }
+
+    ifp pshooting
+    {
+        ifp pfacingframes
+            ifaction PSTAND action PSTANDSHOOT
+        break
+    }
+
+    ifaction PSTANDSHOOT
+        ifactioncount 2 action PSTAND
+
+    ifaction PFALLING
+    {
+        ifp ponground action PSTAND
+        else ifp pfalling break
+        else state check_pstandard
+    }
+
+    ifaction PDUCKING
+    {
+        ifp pducking
+        {
+            ifp pwalking pwalkingback prunning prunningback action PCRAWLING
+        }
+        else
+        {
+            ifp pstanding action PSTAND
+            else state check_pstandard
+        }
+    }
+
+    else ifaction PCRAWLING
+    {
+        ifp pducking
+        {
+            ifp pstanding action PDUCKING
+        }
+        else
+        {
+            ifp pstanding action PSTAND
+            else state check_pstandard
+        }
+    }
+
+    else ifaction PJUMPING
+    {
+        ifp ponground action PSTAND
+        else ifactioncount 4
+            ifp pfalling action PFALLING
+    }
+
+    ifaction PLOOKINLEFT
+    {
+        ifp plookingright action PLOOKINRIGHT
+        else
+        {
+            ifp plookingleft break
+            else
+            {
+                ifp pstanding action PSTAND
+                else state check_pstandard
+            }
+        }
+    }
+    else ifaction PLOOKINRIGHT
+    {
+        ifp plookingleft action PLOOKINLEFT
+        else
+        {
+            ifp plookingright break
+            else
+            {
+                ifp pstanding action PSTAND
+                else state check_pstandard
+            }
+        }
+    }
+    else ifp pfalling action PFALLING
+    else ifaction PSTAND
+    {
+        ifp plookingleft action PLOOKINLEFT
+        else ifp plookingright action PLOOKINRIGHT
+        else state check_pstandard
+    }
+    else ifaction PWALK
+    {
+        ifp pfalling action PFALLING
+        else ifp pstanding action PSTAND
+        else ifp prunning action PRUN
+        else ifp pwalkingback action PWALKBACK
+        else ifp prunningback action PRUNBACK
+        else ifp pjumping action PJUMPING
+        else ifp pducking action PDUCKING
+    }
+    else ifaction PRUN
+    {
+        ifp pstanding action PSTAND
+        else ifp pwalking action PWALK
+        else ifp pwalkingback action PWALKBACK
+        else ifp prunningback action PRUNBACK
+        else ifp pjumping action PJUMPING
+        else ifp pducking action PDUCKING
+    }
+    else ifaction PWALKBACK
+    {
+        ifp pstanding action PSTAND
+        else ifp pwalking action PWALK
+        else ifp prunning action PRUN
+        else ifp prunningback action PRUNBACK
+        else ifp pjumping action PJUMPING
+        else ifp pducking action PDUCKING
+    }
+    else ifaction PRUNBACK
+    {
+        ifp pstanding action PSTAND
+        else ifp pwalking action PWALK
+        else ifp prunning action PRUN
+        else ifp pwalkingback action PWALKBACK
+        else ifp pjumping action PJUMPING
+        else ifp pducking action PDUCKING
+    }
+enda
+
+action DRONEFRAMES         0   1   5   1
+action DRONESHOOTINGFRAME  5   2   5  -1
+action DRONE1HITFRAME      0   1   5   1
+// 346 1   5   1
+
+move DRONE1PERSUE           84    8
+move DRONE1FLINTCH         -64   -8
+move DRONE1_FLEE_VELS      -84    8
+move DRONE1WAIT              0    0
+
+actor DRONE1 MEDIUMSTRENGTH DRONEFRAMES DRONE1PERSUE face_player geth houver
+
+    ifsquished
+    {
+        addscore 1000
+        nuke debris 8
+        killit
+    }
+
+    else ifhitweapon
+    {
+        action DRONE1HITFRAME
+        move DRONE1FLINTCH slow_to_stop geth face_player
+
+        ifwasweapon BULLET
+            spawn EXPLOSION
+
+        ifdead
+        {
+            addscore 1000
+            nuke debris 8
+            killit
+        }
+    }        
+    ifaction DRONEFRAMES
+    {
+        ifmove DRONE1_FLEE_VELS
+        {
+            ifactioncount 16  // changed its mind
+                move DRONE1PERSUE face_player geth houver
+        }
+        else ifpdistl 1024 ifcansee
+        {
+            action DRONESHOOTINGFRAME
+            move DRONE1WAIT slow_to_stop houver
+        }
+    }
+    else ifaction DRONESHOOTINGFRAME
+    {
+        ifactioncount 2
+        {
+            shoot WEAPON2
+            resetactioncount
+        }
+        ifrnd 48
+        {
+            action DRONEFRAMES
+            move DRONE1_FLEE_VELS face_exit geth houver
+        }
+    }
+
+    else ifaction DRONE1HITFRAME ifactioncount 10
+    {
+        action DRONEFRAMES
+        move DRONE1PERSUE face_player geth houver
+    }
+enda
+
+action EXPBARRELFRAME         0   1   1
+action EXPBARRELUPFRAME    -316   2   1
+move GOINGUP -8 -192
+actor EXPLODINGBARREL WEAK EXPBARRELFRAME
+    ifaction EXPBARRELUPFRAME
+    {
+        ifactioncount 15
+        {
+            addscore 200
+            spawn EXPLOSION
+            killit
+        }
+    }
+    else
+    {
+        fall
+        ifhitweapon ifdead
+        {
+            action EXPBARRELUPFRAME
+            move GOINGUP getv
+        }
+    }
+
+enda
+
+action HYDRENTFRAME          0   1   2
+actor HYDRENT WEAKEST HYDRENTFRAME
+enda
+
+action CAMERAFRAME       0   1   5
+actor CAMERA1 WEAKEST CAMERAFRAME
+enda
+
+action WOODENHORSEFRAME  0   1   3
+action WOODENFALLFRAME   69  1   5
+actor WOODENHORSE WEAKEST WOODENHORSEFRAME
+    fall
+    ifaction WOODENHORSEFRAME ifhitweapon
+    {
+        spawn EXPLOSION
+
+        ifwasweapon RPG
+            killit
+        else action WOODENFALLFRAME
+    }
+enda
+
+action PARKINGMETERFRAME    0   1   2
+actor PARKINGMETER WEAKEST PARKINGMETERFRAME
+    ifhitweapon cactor PARKINGMETERDEAD
+enda
+
+actor DUDPIPE4 WEAKEST
+    ifhitweapon cactor DUDPIPE4HIT
+enda
+
+actor DUDPIPE1 WEAKEST
+    ifhitweapon
+    {
+        cactor DUDPIPE4HIT
+        spawn STEAM
+    }
+enda
+
+action CEILINGSTEAMFRAME   0   4   -1   1           // Negative rotations mean
+actor CEILINGSTEAM WEAKEST CEILINGSTEAMFRAME        // rotated sprites.
+    ifactioncount 10        // Turn it on
+    {
+        ifrnd 32 cstat 0
+        else cstat 2
+    }
+enda
+
+actor WATERBUBBLEMAKER
+
+    ifpdistl 2048
+        ifrnd 64
+            spawn WATERBUBBLE
+enda
+
+action BUBBLE
+action CRACKEDBUBBLE    1
+move BUBMOVE            8  -32
+actor WATERBUBBLE 0 BUBBLE BUBMOVE getv
+
+    ifaction CRACKEDBUBBLE
+    {
+        ifactioncount 10
+            killit
+    }
+
+    else
+        ifactioncount 30
+            action CRACKEDBUBBLE
+enda
+
+action BOUNCEFRAMES 0 5 1 1 1
+
+actor BOUNCEMINE WEAK BOUNCEFRAMES
+    fall
+    ifpdistl 512
+    {
+        spawn EXPLOSION
+        addhealth -20
+        nuke killit
+    }
+    ifhitweapon
+    {
+        ifwasweapon WEAPON1
+        {
+            spawn EXPLOSION
+            addscore 100
+            nuke killit
+        }
+        else
+        {
+            spawn EXPLOSION
+            addscore 100
+            nuke killit
+        }
+     }
+enda
+
+action LASERFRAME 0 1 1 1
+actor LASERSITE 0 LASERFRAME
+    killit
+enda
+
+action DRUNKSTANDFRAME 0 1 1 1 1
+action DRUNKDRINKFRAME 1 1 1 1 1
+actor DRUNKGUY1 WEAK DRUNKDRINKFRAME
+    ifaction DRUNKDRINKFRAME
+    {
+        ifactioncount 8
+            ifrnd 32
+                action DRUNKSTANDFRAME
+    }
+    ifaction DRUNKSTANDFRAME
+        ifactioncount 6
+            ifrnd 32
+                action DRUNKDRINKFRAME
+enda
+
+move SMOKEVEL 8 -64
+action SMOKEFRAMES 0 4 1 1 3
+actor SMALLSMOKE 0 SMOKEFRAMES SMOKEVEL geth getv face_player
+    ifpdistg 4096 killit // If you can't see it, don't use it
+    ifactioncount 4 killit
+enda
+
+// Face Player
+
+move STICKVEL 32 -128
+action SFRAMES 0 2 1 1 0
+actor STICKSPARK 0 SFRAMES STICKVEL on_owner face_player geth getv
+    ifactioncount 2 cstat 2
+    ifactioncount 12
+        killit
+enda
+
+move EXPLOSION_VEL 48
+move SQUIRT_VEL 128 4
+action EXPLOSION_FRAMES 0 10 1 1 1
+actor EXPLOSION 0 EXPLOSION_FRAMES
+    ifmove 0
+    {
+        sound expl1.voc
+
+        ifspawnedby SEENINE
+            move SQUIRT_VEL getv geth
+        else
+        {
+            ifsquished
+                move SQUIRT_VEL getv geth
+            else move EXPLOSION_VEL geth
+        }
+    }
+
+    ifactioncount 10 killit
+    ifsquished
+        move SQUIRT_VEL getv geth
+enda
+
+move EXPLOSION2_VEL -16 32
+actor EXPLOSION2 0 EXPLOSION_FRAMES EXPLOSION2_VEL getv geth
+    ifactioncount 10 killit
+    ifsquished
+        move SQUIRT_VEL geth getv
+enda
+
+// Inventory stuff
+
+define GET_STEROIDS 0
+define GET_SHIELD   1
+define GET_SCUBA    2
+define GET_HOLODUKE 3
+define GET_JETPACK  4
+
+state getcode
+    addscore 100
+    sound getweapn.voc
+    killit
+ends
+
+actor STEROIDS
+    fall
+    ifpdistl 768
+    {
+        addinventory GET_STEROIDS
+        state getcode
+    }
+enda
+
+actor SHIELD
+    fall
+    ifpdistl 768
+    {
+        addinventory GET_SHIELD
+        state getcode
+    }
+enda
+
+actor AIRTANK
+    fall
+    ifpdistl 768
+    {
+        addinventory GET_SCUBA
+        state getcode
+    }
+enda
+
+actor HOLODUKE
+    fall
+    ifpdistl 768
+    {
+        addinventory GET_HOLODUKE
+        state getcode
+    }
+enda
+
+actor JETPACK
+    fall
+    ifpdistl 768
+    {
+        addinventory GET_JETPACK
+        state getcode
+    }
+enda
+
+actor AMMO
+    fall
+    ifpdistl 768
+    {
+        addammo 48   // 4 clips total , 12 rounds each
+        state getcode
+    }
+enda
+
+action BATAMMOOTHERFRAMES  10   2   1   1   10
+action BATAMMOFRAME 0 1 1 1 10
+actor BATTERYAMMO 0 BATAMMOFRAME
+    fall
+
+    ifaction BATAMMOFRAME
+        action BATAMMOOTHERFRAMES
+    else ifactioncount 3
+        action BATAMMOFRAME
+
+    ifpdistl 768
+    {
+        addbatteryammo 20   // 20 amps per item
+        state getcode
+    }
+enda
+
+actor RPGAMMO
+    fall
+    ifpdistl 768
+    {
+        addrammo 5
+        state getcode
+    }
+enda
+
+actor RPGSPRITE
+    fall
+    ifpdistl 768
+    {
+        addweapon RPG
+        state getcode
+    }
+enda
+
+

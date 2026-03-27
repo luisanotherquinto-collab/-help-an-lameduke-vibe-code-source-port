@@ -1,0 +1,89 @@
+January 29, 1997
+
+NOTE: This might not even work on all systems, so don't even bother leaving
+      us Email about this.  This is provided "as is" for entertainment
+      purposes only.
+
+Duke Nukem Fans,
+
+Today being the one year aniversary of the shareware release of Duke Nukem
+3D, we thought we'd do something a little special for y'all.
+
+We're releasing LAMEDUKE.ZIP.  This is a VERY early version of Duke Nukem 3D
+and the EXE is dated 12/30/94.  That's about 13 months prior to the release
+of the shareware version.  Oh, man, was this game lame then :)
+
+Why are we releasing it?  We're not sure...  We just thought it'd be cool
+for you all to see the state a game is in a year before it's release.  So,
+this is a behind the scenes peek at what happens during the creation of a
+game.  You will get to see lameness the likes of which the world has never
+seen, and what most developer's hide from you and when the press visits. :)
+
+Running the game
+----------------
+
+* It might not work on all systems, so don't even bother leaving us email
+  about it.  It is provided "as is" for entertainment purposes only.
+
+* You will probably have to load each level by hand.  Not sure if the exit
+  switches are there, and even if they are, we don't know if they work.
+
+* Type D3D /v1 /l1 (for mission 1, level 1).  This is pretty much the same
+  as the release version of Duke.  I think levels 1-10 exist for volumes 1-3,
+  so there is a lot to look at.
+  NOTE: "D3D /v# /l#" - v# is the volume (1-3), l# is the level (1-8) or so.
+
+* Run SETUP, and select video, sound (probably SoundBlaster only), and
+  keyboard config.
+
+* We noticed on our systems that is runs really weird, like the timer is
+  going nuts, so don't expect smooth gameplay.
+
+* If there are cheat codes in this thing, we have no idea what they are.
+
+* There is no Dukematch in this.  Or if there is, we don't remember how to
+  do it.  :)
+
+* It might not work on all systems, so don't even bother leaving us email
+  about it.  It is provided "as is" for entertainment purposes only.
+  Remember, we don't want E-mail on it.
+
+Cool stuff to note
+------------------
+* We had a laser sight on the pistol that was finally dropped
+
+* We had stuff like subway cars, breaking glass and video monitors in from
+  nearly the start of the game.
+
+* Weapon 5 was the BIG rocket launcher.  Cool looking, but you can see why
+  it changed.
+
+* Weapon 3 changed to the 3 barrel chaingun
+
+* Weapon 1 was a tazer type stick, dropped for Duke's mighty foot
+
+* E1L4 shows the early OctaBrain.  Oh my God!
+
+* You will probably notice lot's of level sections that look familiar. We
+  used lots of E3L2 in the Plutonium PAK for the "DERILICT" level.
+
+* That we're not answering any E-Mail on this.
+
+So, have fun and poke around LAMEDUKE a little and see what you can find.
+But most of all have some fun with it and don't take it too seriously.
+
+Thanks to all of you who have supported Duke over the last year, making it
+one of the biggest hits in recent years.  We appreciate it, and will try to
+bring you better games in the future.  Also thanks to #duke3d on Undernet
+IRC for pushing us to release this.  We joked about it for awhile around the
+office and decided "What the hell, why not?"
+
+A big thanks to Joe Siegler for having the foresight to keep this file for
+a year and half so it can be released to you!
+
+-- The Duke Nukem Team: (George Broussard, Todd Replogle, Allen Blum, Dirk
+   Jones, Douglas R. Wood, Randy Pitchford, Brian Martel, Keith Schuler,
+   Stephen Hornback, Lee Jackson, Ken Silverman and Bobby Prince.)
+
+P.S.  Just in case you missed it, don't send us any E-Mail on Lameduke.
+      This is released "as is".  We don't even know if it will work.
